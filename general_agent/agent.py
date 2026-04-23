@@ -13,26 +13,23 @@ To customise:
 """
 from google.adk.agents import Agent
 
-from .tools import get_current_datetime, look_up_icd10
+from .tools.general import query_hr_mcp
 
 root_agent = Agent(
-    name="general_agent",
+    name="staff_agent",
     model="gemini-2.5-flash",
     description=(
-        "A general-purpose clinical assistant for date/time queries "
-        "and ICD-10-CM code lookups. Does not require patient context."
+        "A clinical staff resource agent that finds available clinicians "
+        "matching a requested specialty using the hospital HR MCP server."
     ),
     instruction=(
-        "You are a helpful clinical assistant. "
-        "Use the available tools to answer questions accurately. "
-        "For date and time questions, always ask for a timezone if not provided — "
-        "default to UTC if the user doesn't specify. "
-        "For ICD-10 lookups, return the code and full description clearly. "
-        "Never invent codes or dates — always use the tools."
+        "You are the Staff Resource Agent. "
+        "Your job is to receive a required medical specialty query (e.g., Cardiology) "
+        "and use the HR database tool to find an available clinician matching that exact specialty. "
+        "Respond simply with the clinician's name, ID, and location for dispatch."
     ),
     tools=[
-        get_current_datetime,
-        look_up_icd10,
+        query_hr_mcp,
     ],
     # No before_model_callback — this agent does not need patient/FHIR context.
     # This is intentional: it demonstrates that the FHIR hook is optional.

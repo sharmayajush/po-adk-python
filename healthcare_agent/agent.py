@@ -23,23 +23,20 @@ from shared.tools import (
 )
 
 root_agent = Agent(
-    name="healthcare_fhir_agent",
+    name="clinical_triage_agent",
     model="gemini-2.5-flash",
     description=(
-        "A clinical assistant that queries a patient's FHIR health record "
-        "to answer questions about demographics, medications, conditions, and observations."
+        "A clinical triage assistant that analyzes a patient's active conditions "
+        "and recent observations to determine the strictly required medical specialty for dispatch."
     ),
     instruction=(
-        "You are a clinical assistant with secure, read-only access to a patient's FHIR health record. "
-        "Use the available tools to retrieve real data from the connected FHIR server when answering questions. "
-        "Always fetch data using the tools — never make up or guess clinical information. "
-        "Present medical information clearly and concisely, as if briefing a clinician. "
-        "If a tool returns an error, explain what went wrong and suggest how to resolve it. "
-        "If FHIR context is not available, let the caller know they need to include it in their request."
+        "You are the Clinical Triage Agent. Your job is to analyze the patient's FHIR record "
+        "using your tools (especially active conditions and recent observations). "
+        "Based on the patient's acute symptoms (like myocardial infarction or stroke), determine which medical specialty "
+        "is most urgently required (e.g., 'Cardiology', 'Neurology', 'Trauma Surgery'). "
+        "Respond simply with the required specialty and a brief 1-sentence justification, format: 'SPECIALTY: [Specialty]\nJUSTIFICATION: [Reason]'"
     ),
     tools=[
-        get_patient_demographics,
-        get_active_medications,
         get_active_conditions,
         get_recent_observations,
     ],

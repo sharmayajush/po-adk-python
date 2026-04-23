@@ -16,41 +16,31 @@ from shared.app_factory import create_a2a_app
 
 from .agent import root_agent
 
-print(os.getenv('PO_PLATFORM_BASE_URL'))
+# PRODUCTION: Uncomment the line below for debugging platform URL issues.
+# print(os.getenv('PO_PLATFORM_BASE_URL'))
 
 a2a_app = create_a2a_app(
     agent=root_agent,
-    name="healthcare_fhir_agent",
+    name="clinical_triage_agent",
     description=(
-        "A clinical assistant that queries a patient's FHIR health record to answer "
-        "questions about demographics, active medications, conditions, and observations."
+        "A clinical triage assistant that analyzes a patient's active conditions "
+        "and recent observations to determine the strictly required medical specialty for dispatch."
     ),
     url=os.getenv("HEALTHCARE_AGENT_URL", os.getenv("BASE_URL", "http://localhost:8001")),
     port=8001,
+    # LOCAL: Disable API key for local development testing.
+    # PRODUCTION: Remove this line (defaults to True) and set API_KEYS in .env.
+    require_api_key=False,
     # This URI is the key under which callers send FHIR credentials in the
     # A2A message metadata.  Update to match your Prompt Opinion workspace URL.
     fhir_extension_uri=f"{os.getenv('PO_PLATFORM_BASE_URL', 'http://localhost:5139')}/schemas/a2a/v1/fhir-context",
     # SMART-on-FHIR scopes — one per FHIR resource type accessed by the tools.
     # All are marked required because each tool will fail without its scope.
     fhir_scopes=[
-        {"name": "patient/Patient.rs",           "required": True},   # get_patient_demographics
-        {"name": "patient/MedicationRequest.rs", "required": True},   # get_active_medications
         {"name": "patient/Condition.rs",         "required": True},   # get_active_conditions
         {"name": "patient/Observation.rs",       "required": True},   # get_recent_observations
     ],
     skills=[
-        AgentSkill(
-            id="patient-demographics",
-            name="patient-demographics",
-            description="Retrieve patient demographics like name, DOB, and contacts.",
-            tags=["demographics", "fhir"],
-        ),
-        AgentSkill(
-            id="active-medications",
-            name="active-medications",
-            description="Get a list of the patient's active medications and dosages.",
-            tags=["medications", "fhir"],
-        ),
         AgentSkill(
             id="active-conditions",
             name="active-conditions",
@@ -65,3 +55,4 @@ a2a_app = create_a2a_app(
         ),
     ],
 )
+
