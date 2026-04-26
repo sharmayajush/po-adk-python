@@ -3,7 +3,7 @@ import json
 import os
 
 def test_vitalmesh_orchestrator():
-    url = "http://localhost:8003/v1/a2a"
+    url = "http://localhost:8003/"
     
     # We pass the synthetic Triage-001 payload as "context"
     # This simulates Prompt Opinion's SHARP headers injecting the FHIR bundle
@@ -21,26 +21,30 @@ def test_vitalmesh_orchestrator():
         "method": "message/send",
         "params": {
             "taskId": "test-task-123",
+            "metadata": {
+                "http://localhost:5139/schemas/a2a/v1/fhir-context": {
+                    "environment": "test",
+                    "patientId": fhir_data["triage_scenarios"][0]["patientId"],
+                    "fhirUrl": "mock_url",
+                    "fhirToken": "mock_token",
+                    "fhirBundle": {
+                        "resourceType": "Bundle",
+                        "entry": [
+                            {"resource": fhir_data["triage_scenarios"][0]["condition"]},
+                            {"resource": fhir_data["triage_scenarios"][0]["observations"][0]}
+                        ]
+                    }
+                }
+            },
             "message": {
+                "kind": "message",
+                "messageId": "test-msg-123",
                 "role": "user",
                 "parts": [
                     {
-                        "text": "A new patient has arrived with the attached FHIR condition. Analyze the condition to determine the required clinical specialty, and then find an available clinician from HR who matches that specialty to take the case."
+                        "text": "A new patient has arrived. Their FHIR context is securely attached to your session. First, call the clinical_triage_agent to analyze their active conditions and determine the required specialty. Then, pass that specialty to the staff_agent to find an available clinician."
                     }
-                ],
-                "metadata": {
-                    "http://localhost:5139/schemas/a2a/v1/fhir-context": {
-                        "environment": "test",
-                        "patientId": fhir_data["triage_scenarios"][0]["patientId"],
-                        "fhirBundle": {
-                            "resourceType": "Bundle",
-                            "entry": [
-                                {"resource": fhir_data["triage_scenarios"][0]["condition"]},
-                                {"resource": fhir_data["triage_scenarios"][0]["observations"][0]}
-                            ]
-                        }
-                    }
-                }
+                ]
             }
         }
     }

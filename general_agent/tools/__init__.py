@@ -10,9 +10,8 @@ To add new tools:
 You can also import tools from shared/tools/ if this agent needs FHIR access.
 """
 
-from .general import get_current_datetime, look_up_icd10
+from .general import query_hr_mcp
 
 __all__ = [
-    "get_current_datetime",
-    "look_up_icd10",
+    "query_hr_mcp",
 ]

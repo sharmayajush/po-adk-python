@@ -39,6 +39,10 @@ def _get_fhir_context(tool_context: ToolContext):
     Returns an error dict if any credential is missing so the caller can
     return it directly as the tool result.
     """
+    if "fhir_bundle" in tool_context.state and tool_context.state["fhir_bundle"]:
+        # Fallback to in-memory bundle for mock testing
+        return "mock_url", "mock_token", tool_context.state.get("patient_id", "mock_id")
+
     fhir_url   = tool_context.state.get("fhir_url",   "").rstrip("/")
     fhir_token = tool_context.state.get("fhir_token", "")
     patient_id = tool_context.state.get("patient_id", "")
@@ -222,16 +226,20 @@ def get_active_conditions(tool_context: ToolContext) -> dict:
         return ctx
     fhir_url, fhir_token, patient_id = ctx
 
-    logger.info("tool_get_active_conditions patient_id=%s", patient_id)
-    try:
-        bundle = _fhir_get(
-            fhir_url, fhir_token, "Condition",
-            params={"patient": patient_id, "clinical-status": "active", "_count": "50"},
-        )
-    except httpx.HTTPStatusError as e:
-        return _http_error_result(e)
-    except Exception as e:
-        return _connection_error_result(e)
+    if fhir_url == "mock_url":
+        bundle = tool_context.state.get("fhir_bundle", {})
+        bundle["entry"] = [e for e in bundle.get("entry", []) if e.get("resource", {}).get("resourceType") == "Condition"]
+    else:
+        logger.info("tool_get_active_conditions patient_id=%s", patient_id)
+        try:
+            bundle = _fhir_get(
+                fhir_url, fhir_token, "Condition",
+                params={"patient": patient_id, "clinical-status": "active", "_count": "50"},
+            )
+        except httpx.HTTPStatusError as e:
+            return _http_error_result(e)
+        except Exception as e:
+            return _connection_error_result(e)
 
     conditions = []
     for entry in bundle.get("entry", []):
@@ -277,16 +285,21 @@ def get_recent_observations(category: str, tool_context: ToolContext) -> dict:
     fhir_url, fhir_token, patient_id = ctx
 
     category = (category or "vital-signs").strip().lower()
-    logger.info("tool_get_recent_observations patient_id=%s category=%s", patient_id, category)
-    try:
-        bundle = _fhir_get(
-            fhir_url, fhir_token, "Observation",
-            params={"patient": patient_id, "category": category, "_sort": "-date", "_count": "20"},
-        )
-    except httpx.HTTPStatusError as e:
-        return _http_error_result(e)
-    except Exception as e:
-        return _connection_error_result(e)
+    
+    if fhir_url == "mock_url":
+        bundle = tool_context.state.get("fhir_bundle", {})
+        bundle["entry"] = [e for e in bundle.get("entry", []) if e.get("resource", {}).get("resourceType") == "Observation"]
+    else:
+        logger.info("tool_get_recent_observations patient_id=%s category=%s", patient_id, category)
+        try:
+            bundle = _fhir_get(
+                fhir_url, fhir_token, "Observation",
+                params={"patient": patient_id, "category": category, "_sort": "-date", "_count": "20"},
+            )
+        except httpx.HTTPStatusError as e:
+            return _http_error_result(e)
+        except Exception as e:
+            return _connection_error_result(e)
 
     observations = []
     for entry in bundle.get("entry", []):
